@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/constants/route_names.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/widgets/app_search_field.dart';
+import '../../../core/widgets/app_section_header.dart';
 import '../../../core/widgets/confirm_dialog.dart';
 import '../../../core/widgets/empty_view.dart';
 import '../../../core/widgets/error_view.dart';
@@ -32,8 +35,8 @@ class _NotesScreenState extends State<NotesScreen> {
   Future<void> _deleteNote(BuildContext context, Note note) async {
     final confirmed = await showConfirmDialog(
       context: context,
-      title: 'Delete Note',
-      content: 'Are you sure you want to delete "${note.title}"?',
+      title: 'Xóa ghi chú',
+      content: 'Bạn có chắc muốn xóa "${note.title}" không?',
     );
     if (!confirmed || !context.mounted) {
       return;
@@ -45,16 +48,13 @@ class _NotesScreenState extends State<NotesScreen> {
 
     await noteProvider.removeNote(note.id!);
     if (noteProvider.errorMessage != null && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(noteProvider.errorMessage!)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(noteProvider.errorMessage!)));
       return;
     }
 
-    await Future.wait([
-      homeProvider.loadHomeData(),
-      statsProvider.loadStats(),
-    ]);
+    await Future.wait([homeProvider.loadHomeData(), statsProvider.loadStats()]);
   }
 
   @override
@@ -74,50 +74,50 @@ class _NotesScreenState extends State<NotesScreen> {
         return RefreshIndicator(
           onRefresh: noteProvider.loadNotes,
           child: ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.screenHorizontalCompact,
+              AppSpacing.lg,
+              AppSpacing.screenHorizontalCompact,
+              144,
+            ),
             children: [
-              TextField(
+              const AppSectionHeader(
+                title: 'Ghi chú',
+                subtitle: 'Lưu ý chính, chủ đề học và nội dung cần xem lại.',
+                isPageHeader: true,
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              AppSearchField(
                 controller: _searchController,
+                hintText: 'Tiêu đề, nội dung, môn học hoặc thẻ',
                 onChanged: (value) {
                   noteProvider.searchNotes(value);
                   setState(() {});
                 },
-                decoration: InputDecoration(
-                  hintText: 'Search title, content, subject, or tags',
-                  prefixIcon: const Icon(Icons.search),
-                  suffixIcon: _searchController.text.isEmpty
-                      ? null
-                      : IconButton(
-                          onPressed: () {
-                            _searchController.clear();
-                            noteProvider.searchNotes('');
-                            setState(() {});
-                          },
-                          icon: const Icon(Icons.clear),
-                        ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
+                onClear: () {
+                  _searchController.clear();
+                  noteProvider.searchNotes('');
+                  setState(() {});
+                },
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
               SubjectFilterBar(
                 subjects: noteProvider.subjects,
                 selectedSubject: noteProvider.selectedSubject,
                 onSelected: (subject) => noteProvider.filterBySubject(subject),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
               if (noteProvider.filteredNotes.isEmpty)
                 const EmptyView(
-                  title: 'No Notes Yet',
+                  title: 'Chưa có ghi chú nào',
                   subtitle:
-                      'Create your first note to start learning with MemoQuest.',
+                      'Tạo ghi chú đầu tiên để bắt đầu học cùng MemoQuest.',
                   icon: Icons.note_add_outlined,
                 )
               else
                 ...noteProvider.filteredNotes.map(
                   (note) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.only(bottom: AppSpacing.md),
                     child: NoteCard(
                       note: note,
                       onTap: () async {
@@ -150,7 +150,6 @@ class _NotesScreenState extends State<NotesScreen> {
                     ),
                   ),
                 ),
-              const SizedBox(height: 96),
             ],
           ),
         );
