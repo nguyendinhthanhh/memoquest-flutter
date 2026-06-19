@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/constants/route_names.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/utils/review_utils.dart';
+import '../../../core/widgets/app_metric_band.dart';
+import '../../../core/widgets/app_section_header.dart';
 import '../../../core/widgets/confirm_dialog.dart';
 import '../../../core/widgets/empty_view.dart';
 import '../../../core/widgets/error_view.dart';
@@ -14,11 +18,7 @@ import '../providers/flashcard_provider.dart';
 import '../widgets/flashcard_card.dart';
 
 class DeckScreen extends StatefulWidget {
-  const DeckScreen({
-    super.key,
-    this.noteIdFilter,
-    this.standalone = false,
-  });
+  const DeckScreen({super.key, this.noteIdFilter, this.standalone = false});
 
   final int? noteIdFilter;
   final bool standalone;
@@ -28,18 +28,21 @@ class DeckScreen extends StatefulWidget {
 }
 
 class _DeckScreenState extends State<DeckScreen> {
-  String _difficultyFilter = 'All';
+  String _difficultyFilter = 'Tất cả';
 
   List<Flashcard> _applyFilters(List<Flashcard> source) {
     var cards = source;
     if (widget.noteIdFilter != null) {
-      cards = cards.where((card) => card.noteId == widget.noteIdFilter).toList();
+      cards = cards
+          .where((card) => card.noteId == widget.noteIdFilter)
+          .toList();
     }
-    if (_difficultyFilter != 'All') {
+    if (_difficultyFilter != 'Tất cả') {
       cards = cards
           .where(
             (card) =>
-                card.difficulty.toLowerCase() == _difficultyFilter.toLowerCase(),
+                ReviewUtils.getDifficultyLabel(card.difficulty) ==
+                _difficultyFilter,
           )
           .toList();
     }
@@ -56,8 +59,8 @@ class _DeckScreenState extends State<DeckScreen> {
   Future<void> _deleteCard(Flashcard card) async {
     final confirmed = await showConfirmDialog(
       context: context,
-      title: 'Delete Flashcard',
-      content: 'Are you sure you want to delete this flashcard?',
+      title: 'Xóa thẻ ghi nhớ',
+      content: 'Bạn có chắc muốn xóa thẻ ghi nhớ này không?',
     );
     if (!confirmed || !mounted) {
       return;
@@ -69,9 +72,9 @@ class _DeckScreenState extends State<DeckScreen> {
       return;
     }
     if (provider.errorMessage != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(provider.errorMessage!)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(provider.errorMessage!)));
       return;
     }
 
@@ -82,7 +85,7 @@ class _DeckScreenState extends State<DeckScreen> {
     if (cards.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('No flashcards match the current review filter.'),
+          content: Text('Không có thẻ nào khớp với bộ lọc ôn tập hiện tại.'),
         ),
       );
       return;
@@ -90,10 +93,7 @@ class _DeckScreenState extends State<DeckScreen> {
     await Navigator.pushNamed(
       context,
       RouteNames.review,
-      arguments: {
-        'cards': cards,
-        'title': 'Review Flashcards',
-      },
+      arguments: {'cards': cards, 'title': 'Ôn thẻ ghi nhớ'},
     );
     if (!mounted) {
       return;
@@ -105,7 +105,7 @@ class _DeckScreenState extends State<DeckScreen> {
     if (cards.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('No flashcards match the current quiz filter.'),
+          content: Text('Không có thẻ nào khớp với bộ lọc quiz hiện tại.'),
         ),
       );
       return;
@@ -124,7 +124,8 @@ class _DeckScreenState extends State<DeckScreen> {
   Widget _buildContent(BuildContext context) {
     return Consumer<FlashcardProvider>(
       builder: (context, flashcardProvider, _) {
-        if (flashcardProvider.isLoading && flashcardProvider.flashcards.isEmpty) {
+        if (flashcardProvider.isLoading &&
+            flashcardProvider.flashcards.isEmpty) {
           return const LoadingView();
         }
         if (flashcardProvider.errorMessage != null &&
@@ -147,78 +148,90 @@ class _DeckScreenState extends State<DeckScreen> {
             await flashcardProvider.loadDueFlashcards();
           },
           child: ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.screenHorizontalCompact,
+              AppSpacing.lg,
+              AppSpacing.screenHorizontalCompact,
+              144,
+            ),
             children: [
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Due Today: ${dueCards.length}',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 12,
-                        runSpacing: 12,
-                        children: [
-                          FilledButton.icon(
-                            onPressed: () => _startReview(
-                              dueCards.isNotEmpty ? dueCards : cards,
-                            ),
-                            icon: const Icon(Icons.refresh),
-                            label: const Text('Start Review'),
-                          ),
-                          OutlinedButton.icon(
-                            onPressed: () => _startQuiz(cards),
-                            icon: const Icon(Icons.quiz_outlined),
-                            label: const Text('Start Quiz'),
-                          ),
-                          OutlinedButton.icon(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const QuizHistoryScreen(),
-                                ),
-                              );
-                            },
-                            icon: const Icon(Icons.history),
-                            label: const Text('Quiz History'),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+              if (!widget.standalone) ...[
+                const AppSectionHeader(
+                  title: 'Thẻ ghi nhớ',
+                  subtitle:
+                      'Ôn tập, lọc theo độ khó và theo dõi các lượt cần xem lại.',
+                  isPageHeader: true,
                 ),
+                const SizedBox(height: AppSpacing.xl),
+              ],
+              AppMetricBand(
+                items: [
+                  AppMetricBandItem(
+                    label: 'Đến hạn hôm nay',
+                    value: '${dueCards.length}',
+                  ),
+                  AppMetricBandItem(
+                    label: 'Tổng thẻ',
+                    value: '${cards.length}',
+                  ),
+                  AppMetricBandItem(label: 'Bộ lọc', value: _difficultyFilter),
+                ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  FilledButton.icon(
+                    onPressed: () =>
+                        _startReview(dueCards.isNotEmpty ? dueCards : cards),
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Bắt đầu ôn'),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: () => _startQuiz(cards),
+                    icon: const Icon(Icons.quiz_outlined),
+                    label: const Text('Bắt đầu quiz'),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const QuizHistoryScreen(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.history),
+                    label: const Text('Lịch sử quiz'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.lg),
               Wrap(
                 spacing: 8,
-                children: ['All', 'Hard', 'Medium', 'Easy']
+                children: ['Tất cả', 'Khó', 'Vừa', 'Dễ']
                     .map(
                       (filter) => ChoiceChip(
                         label: Text(filter),
                         selected: _difficultyFilter == filter,
-                        onSelected: (_) => setState(() => _difficultyFilter = filter),
+                        onSelected: (_) =>
+                            setState(() => _difficultyFilter = filter),
                       ),
                     )
                     .toList(),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
               if (cards.isEmpty)
                 const EmptyView(
-                  title: 'No Flashcards Yet',
-                  subtitle:
-                      'Create one manually or generate flashcards from a note.',
+                  title: 'Chưa có thẻ ghi nhớ',
+                  subtitle: 'Hãy tự tạo hoặc sinh thẻ ghi nhớ từ một ghi chú.',
                   icon: Icons.style_outlined,
                 )
               else
                 ...cards.map(
                   (card) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.only(bottom: AppSpacing.md),
                     child: FlashcardCard(
                       flashcard: card,
                       onEdit: () async {
@@ -239,7 +252,6 @@ class _DeckScreenState extends State<DeckScreen> {
                     ),
                   ),
                 ),
-              const SizedBox(height: 96),
             ],
           ),
         );
@@ -253,7 +265,7 @@ class _DeckScreenState extends State<DeckScreen> {
       return _buildContent(context);
     }
     return Scaffold(
-      appBar: AppBar(title: const Text('Flashcards')),
+      appBar: AppBar(title: const Text('Thẻ ghi nhớ')),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
           await Navigator.pushNamed(
@@ -267,7 +279,7 @@ class _DeckScreenState extends State<DeckScreen> {
           await _refreshOverviewData();
         },
         icon: const Icon(Icons.add),
-        label: const Text('Add Card'),
+        label: const Text('Thêm thẻ'),
       ),
       body: _buildContent(context),
     );

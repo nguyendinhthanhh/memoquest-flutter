@@ -21,19 +21,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
 
   final _pages = const [
-    HomeScreen(),
-    NotesScreen(),
-    DeckScreen(),
-    StatsScreen(),
-    SettingsScreen(),
-  ];
-
-  final _titles = const [
-    'Home',
-    'Notes',
-    'Flashcards',
-    'Statistics',
-    'Settings',
+    SafeArea(top: true, bottom: false, child: HomeScreen()),
+    SafeArea(top: true, bottom: false, child: NotesScreen()),
+    SafeArea(top: true, bottom: false, child: DeckScreen()),
+    SafeArea(top: true, bottom: false, child: StatsScreen()),
+    SafeArea(top: true, bottom: false, child: SettingsScreen()),
   ];
 
   void _onDestinationSelected(int index) {
@@ -64,7 +56,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           await _refreshOverviewData();
         },
         icon: const Icon(Icons.add),
-        label: const Text('Add Note'),
+        label: const Text('Thêm ghi chú'),
       );
     }
     if (_currentIndex == 2) {
@@ -77,7 +69,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           await _refreshOverviewData();
         },
         icon: const Icon(Icons.add),
-        label: const Text('Add Card'),
+        label: const Text('Thêm thẻ'),
       );
     }
     return null;
@@ -86,11 +78,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_titles[_currentIndex])),
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _pages,
-      ),
+      body: IndexedStack(index: _currentIndex, children: _pages),
       floatingActionButton: _buildFab(),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
@@ -99,27 +87,27 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           NavigationDestination(
             icon: Icon(Icons.home_outlined),
             selectedIcon: Icon(Icons.home),
-            label: 'Home',
+            label: 'Trang chủ',
           ),
           NavigationDestination(
             icon: Icon(Icons.sticky_note_2_outlined),
             selectedIcon: Icon(Icons.sticky_note_2),
-            label: 'Notes',
+            label: 'Ghi chú',
           ),
           NavigationDestination(
-            icon: Icon(Icons.layers_outlined),
-            selectedIcon: Icon(Icons.layers),
-            label: 'Cards',
+            icon: Icon(Icons.style_outlined),
+            selectedIcon: Icon(Icons.style),
+            label: 'Thẻ ghi nhớ',
           ),
           NavigationDestination(
             icon: Icon(Icons.bar_chart_outlined),
             selectedIcon: Icon(Icons.bar_chart),
-            label: 'Stats',
+            label: 'Tiến độ',
           ),
           NavigationDestination(
             icon: Icon(Icons.settings_outlined),
             selectedIcon: Icon(Icons.settings),
-            label: 'Settings',
+            label: 'Cài đặt',
           ),
         ],
       ),
